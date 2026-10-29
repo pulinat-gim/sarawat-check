@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <title>สารวัตรCheck - หน้าสรุปผล</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: linear-gradient(135deg, #f6f8fb 0%, #edf2f7 100%); min-height: 100vh; margin: 0; color: #334155; }
+        .top-header { background: linear-gradient(135deg, #facc15 0%, #eab308 100%); padding: 18px 40px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 15px rgba(234,179,8,0.2); }
+        .brand { display: flex; align-items: center; gap: 14px; }
+        .brand-icon { background: #ffffff; color: #1e293b; width: 44px; height: 44px; border-radius: 12px; display: flex; justify-content: center; align-items: center; font-size: 1.3em; font-weight: bold; box-shadow: 0 4px 10px rgba(0,0,0,0.08); }
+        .brand-text h2 { margin: 0; font-size: 1.2em; color: #1e293b; }
+        .brand-text p { margin: 0; font-size: 0.8em; color: #475569; }
+        .header-info { display: flex; align-items: center; gap: 20px; }
+        .date-badge { font-size: 0.9em; color: #1e293b; font-weight: 600; }
+        .btn-back { background: #0f172a; color: white; padding: 10px 18px; border-radius: 20px; text-decoration: none; font-size: 0.85em; font-weight: bold; box-shadow: 0 4px 12px rgba(15,23,42,0.2); transition: background 0.2s; }
+        .btn-back:hover { background: #334155; }
+        .main-container { max-width: 1300px; margin: 35px auto; padding: 0 20px; animation: fadeIn 0.4s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .welcome-section { margin-bottom: 30px; }
+        .welcome-section h1 { margin: 0 0 6px 0; font-size: 2em; color: #0f172a; }
+        .welcome-section p { margin: 0; color: #64748b; font-size: 1em; }
+        
+        /* 5 กล่องสถิติหลัก */
+        .stats-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 18px; margin-bottom: 35px; }
+        .stat-card { padding: 22px; border-radius: 22px; cursor: pointer; transition: all 0.3s ease; border: 1px solid rgba(0,0,0,0.03); box-shadow: 0 6px 20px rgba(0,0,0,0.03); position: relative; overflow: hidden; }
+        .stat-card:hover { transform: translateY(-5px); box-shadow: 0 12px 25px rgba(0,0,0,0.06); }
+        .card-purple { background: linear-gradient(135deg, #f3e8ff 0%, #e9d5ff 100%); border-color: #d8b4fe; }
+        .card-green { background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); border-color: #bbf7d0; }
+        .card-yellow { background: linear-gradient(135deg, #fefce8 0%, #fef9c3 100%); border-color: #fef08a; }
+        .card-blue { background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); border-color: #bae6fd; }
+        .card-pink { background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%); border-color: #fecaca; }
+        .stat-card .header-row { display: flex; justify-content: space-between; align-items: flex-start; }
+        .stat-card .title { font-size: 0.85em; color: #475569; font-weight: 700; }
+        .stat-card .icon-badge { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.9em; background: rgba(255,255,255,0.8); box-shadow: 0 2px 5px rgba(0,0,0,0.04); }
+        .stat-card .number { font-size: 2.3em; font-weight: 800; margin: 12px 0 0 0; color: #0f172a; }
+        .stat-card .sub { font-size: 0.75em; color: #64748b; margin-top: 4px; font-weight: 500; }
+
+        .content-layout { display: grid; grid-template-columns: 2fr 1.1fr; gap: 25px; }
+        .card-box { background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(10px); border-radius: 24px; padding: 28px; box-shadow: 0 6px 20px rgba(0,0,0,0.03); border: 1px solid rgba(255,255,255,0.8); margin-bottom: 25px; }
+        .card-box h3 { margin-top: 0; color: #0f172a; font-size: 1.2em; margin-bottom: 20px; display: flex; align-items: center; gap: 8px; }
+        .search-input { width: 100%; padding: 14px 18px; border: 2px solid #e2e8f0; border-radius: 14px; box-sizing: border-box; font-size: 0.95em; margin-bottom: 20px; outline: none; background: #f8fafc; transition: all 0.2s; }
+        .search-input:focus { border-color: #3b82f6; background: #fff; box-shadow: 0 0 0 4px rgba(59,130,246,0.15); }
+        .member-item { display: flex; justify-content: space-between; align-items: center; padding: 15px 0; border-bottom: 1px solid #f8fafc; }
+        .badge { padding: 6px 14px; border-radius: 20px; color: white; font-size: 0.75em; font-weight: bold; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .badge-มา { background: #22c55e; }
+        .badge-มาสาย { background: #eab308; color: #fff; }
+        .badge-ลา { background: #06b6d4; }
+        .badge-ยังไม่มา { background: #ef4444; }
+        
+        .btn-history { background: #e0f2fe; color: #0369a1; border: none; padding: 6px 12px; border-radius: 10px; font-size: 0.78em; font-weight: bold; cursor: pointer; transition: background 0.2s; margin-top: 6px; display: inline-flex; align-items: center; gap: 5px; }
+        .btn-history:hover { background: #bae6fd; }
+
+        /* Sidebar Drawer */
+        .sidebar-drawer { position: fixed; top: 0; right: -450px; width: 420px; height: 100%; background: white; box-shadow: -15px 0 40px rgba(0,0,0,0.12); transition: right 0.35s cubic-bezier(0.16, 1, 0.3, 1); z-index: 1000; display: flex; flex-direction: column; padding: 30px; box-sizing: border-box; }
+        .sidebar-drawer.open { right: 0; }
+        .drawer-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #f1f5f9; padding-bottom: 18px; margin-bottom: 15px; }
+        .drawer-body { overflow-y: auto; flex-grow: 1; }
+        
+        /* Modal สไตล์ใหม่ มีกล่องสรุปยอดรวมด้านบน */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15,23,42,0.5); backdrop-filter: blur(4px); display: none; justify-content: center; align-items: center; z-index: 2000; opacity: 0; transition: opacity 0.3s ease; }
+        .modal-overlay.show { display: flex; opacity: 1; }
+        .modal-box { background: white; width: 100%; max-width: 480px; max-height: 85vh; border-radius: 24px; padding: 25px; box-shadow: 0 20px 40px rgba(0,0,0,0.15); transform: scale(0.9); transition: transform 0.3s ease; display: flex; flex-direction: column; box-sizing: border-box; }
+        .modal-overlay.show .modal-box { transform: scale(1); }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; border-bottom: 1px solid #f1f5f9; padding-bottom: 12px; }
+        .modal-header h3 { margin: 0; color: #0f172a; font-size: 1.15em; }
+        
+        /* กล่องสรุปยอดรวมในป็อปอัพ */
+        .summary-mini-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 15px 0; }
+        .summary-mini-card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 14px; padding: 10px; text-align: center; }
+        .summary-mini-card .val { font-size: 1.4em; font-weight: 800; margin-top: 2px; }
+        .summary-mini-card.green { background: #f0fdf4; border-color: #bbf7d0; color: #16a34a; }
+        .summary-mini-card.yellow { background: #fefce8; border-color: #fef08a; color: #ca8a04; }
+        .summary-mini-card.blue { background: #f0f9ff; border-color: #bae6fd; color: #0284c7; }
+
+        .modal-body { overflow-y: auto; flex-grow: 1; padding-right: 5px; margin-top: 5px; }
+        .history-day-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #f8fafc; font-size: 0.9em; }
+
+        .close-btn { background: #f1f5f9; border: none; width: 32px; height: 32px; border-radius: 50%; font-size: 1.1em; cursor: pointer; color: #475569; display: flex; align-items: center; justify-content: center; transition: background 0.2s; }
+        .close-btn:hover { background: #e2e8f0; }
+        .backdrop { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15,23,42,0.4); backdrop-filter: blur(4px); display: none; z-index: 999; }
+        .backdrop.show { display: block; }
+        .activity-item { display: flex; justify-content: space-between; align-items: center; padding: 14px 0; border-bottom: 1px solid #f8fafc; font-size: 0.9em; }
+    </style>
+</head>
+<body>
+
+    <header class="top-header">
+        <div class="brand">
+            <div class="brand-icon">✓</div>
+            <div class="brand-text">
+                <h2>สารวัตรCheck</h2>
+                <p>ระบบเช็กชื่อเข้าปฏิบัติหน้าที่</p>
+            </div>
+        </div>
+        <div class="header-info">
+            <div class="date-badge" id="currentDateText">วัน...</div>
+            <a href="/" class="btn-back">← กลับหน้าเช็กชื่อ</a>
+        </div>
+    </header>
+
+    <div class="main-container">
+        <div class="welcome-section">
+            <h1>แดชบอร์ดสรุปผล 👋</h1>
+            <p>สรุปการมาโรงเรียนของสมาชิกสารวัตรประจำวันนี้</p>
+        </div>
+
+        <!-- 5 กล่องสถิติหลัก -->
+        <div class="stats-grid">
+            <div class="stat-card card-purple" onclick="openSidebar('all', 'สมาชิกทั้งหมด')">
+                <div class="header-row"><div class="title">สมาชิกทั้งหมด</div><div class="icon-badge" style="color: #7c3aed;">👥</div></div>
+                <div class="number" id="stat-total" style="color: #7c3aed;">0</div><div class="sub">สมาชิกในระบบ</div>
+            </div>
+            <div class="stat-card card-green" onclick="openSidebar('มา', 'มาแล้ววันนี้')">
+                <div class="header-row"><div class="title">มาแล้ว</div><div class="icon-badge" style="color: #16a34a;">✓</div></div>
+                <div class="number" id="stat-present" style="color: #16a34a;">0</div><div class="sub">เช็กชื่อปกติ</div>
+            </div>
+            <div class="stat-card card-yellow" onclick="openSidebar('มาสาย', 'มาสายวันนี้')">
+                <div class="header-row"><div class="title">มาสาย</div><div class="icon-badge" style="color: #ca8a04;">⏱</div></div>
+                <div class="number" id="stat-late" style="color: #ca8a04;">0</div><div class="sub">หลังเวลา 07:40</div>
+            </div>
+            <div class="stat-card card-blue" onclick="openSidebar('ลา', 'ลาวันนี้')">
+                <div class="header-row"><div class="title">ลา</div><div class="icon-badge" style="color: #0284c7;">📄</div></div>
+                <div class="number" id="stat-leave" style="color: #0284c7;">0</div><div class="sub">ลาป่วย / ลากิจ</div>
+            </div>
+            <div class="stat-card card-pink" onclick="openSidebar('ยังไม่มา', 'ยังไม่มาวันนี้')">
+                <div class="header-row"><div class="title">ยังไม่มา</div><div class="icon-badge" style="color: #dc2626;">!</div></div>
+                <div class="number" id="stat-absent" style="color: #dc2626;">0</div><div class="sub">รอดำเนินการ</div>
+            </div>
+        </div>
+
+        <div class="content-layout">
+            <div class="card-box">
+                <h3>📋 รายชื่อสมาชิกวันนี้</h3>
+                <input type="text" id="searchInput" class="search-input" placeholder="🔍 ค้นหาชื่อ, นามสกุล หรือห้องเรียน..." oninput="filterTableLocally()">
+                <div id="member-container"></div>
+            </div>
+            <div>
+                <div class="card-box">
+                    <h3>📌 กิจกรรมล่าสุด</h3>
+                    <div id="activity-container">
+                        <p style="color: #888; font-size: 0.9em; text-align: center;">ยังไม่มีกิจกรรมวันนี้</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sidebar Drawer -->
+    <div id="backdrop" class="backdrop" onclick="closeSidebar()"></div>
+    <div id="sidebarDrawer" class="sidebar-drawer">
+        <div class="drawer-header">
+            <h3 id="drawer-title" style="margin: 0; color: #0f172a; font-size: 1.15em;">รายละเอียดรายชื่อ</h3>
+            <button class="close-btn" onclick="closeSidebar()">&times;</button>
+        </div>
+        <div class="drawer-body" id="drawer-member-container"></div>
+    </div>
+
+    <!-- Modal Pop-up ดูประวัติรายบุคคล (พร้อมสรุปย่อย) -->
+    <div id="historyModal" class="modal-overlay" onclick="closeHistoryModal(event)">
+        <div class="modal-box" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <div>
+                    <h3 id="modalMemberName">ประวัติย้อนหลัง</h3>
+                    <div id="modalMemberInfo" style="font-size: 0.8em; color: #64748b; margin-top: 2px;"></div>
+                </div>
+                <button class="close-btn" onclick="closeHistoryModal()">&times;</button>
+            </div>
+
+            <!-- กล่องสรุปจำนวนครั้ง (มา, สาย, ลา) -->
+            <div class="summary-mini-grid">
+                <div class="summary-mini-card green">
+                    <div style="font-size: 0.75em; font-weight: bold;">มาปกติ</div>
+                    <div class="val" id="sumModalPresent">0</div>
+                </div>
+                <div class="summary-mini-card yellow">
+                    <div style="font-size: 0.75em; font-weight: bold;">มาสาย</div>
+                    <div class="val" id="sumModalLate">0</div>
+                </div>
+                <div class="summary-mini-card blue">
+                    <div style="font-size: 0.75em; font-weight: bold;">ลา</div>
+                    <div class="val" id="sumModalLeave">0</div>
+                </div>
+            </div>
+
+            <p style="font-size: 0.82em; font-weight: bold; color: #475569; margin: 10px 0 5px 0;">📅 รายละเอียดรายวัน:</p>
+            <div class="modal-body" id="modalHistoryList"></div>
+        </div>
+    </div>
+
+    <script>
+        let globalAttendanceData = [];
+
+        function updateDateHeader() {
+            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            document.getElementById('currentDateText').innerText = `วันที่ ${new Date().toLocaleDateString('th-TH', options)}`;
+        }
+
+        async function fetchDashboardData() {
+            try {
+                const res = await fetch('/api/attendance/today');
+                const data = await res.json();
+                if (!data.ok) return;
+
+                document.getElementById('stat-total').innerText = data.stats.total;
+                document.getElementById('stat-present').innerText = data.stats.มา;
+                document.getElementById('stat-late').innerText = data.stats.มาสาย;
+                document.getElementById('stat-leave').innerText = data.stats.ลา;
+                document.getElementById('stat-absent').innerText = data.stats.ยังไม่มา;
+
+                globalAttendanceData = data.attendance;
+                renderMainList('all');
+                renderActivities(data.activities);
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        function renderMainList(filterStatus) {
+            const container = document.getElementById('member-container');
+            container.innerHTML = '';
+            let list = filterStatus === 'all' ? globalAttendanceData : globalAttendanceData.filter(m => m.status === filterStatus);
+            
+            if (list.length === 0) {
+                container.innerHTML = `<p style="text-align: center; color: #888; padding: 20px;">ไม่พบรายชื่อในกลุ่มนี้</p>`;
+                return;
+            }
+
+            list.forEach(m => {
+                const item = document.createElement('div');
+                item.className = 'member-item';
+                let subText = `ห้อง ${m.class_room} | ${m.role}`;
+                if (m.status === 'ลา' && m.note) subText += ` (เหตุผล: ${m.note})`;
+
+                const logsEnc = encodeURIComponent(JSON.stringify(m.history_logs || []));
+
+                item.innerHTML = `
+                    <div>
+                        <strong>${m.full_name} (${m.nickname})</strong><br>
+                        <span style="font-size: 0.85em; color: #64748b;">${subText}</span><br>
+                        <button class="btn-history" onclick="openHistoryModal('${m.full_name}', '${m.nickname}', '${m.class_room}', '${logsEnc}')">
+                            📊 ดูประวัติย้อนหลังรายวัน
+                        </button>
+                    </div>
+                    <div><span class="badge badge-${m.status}">${m.status}</span></div>
+                `;
+                container.appendChild(item);
+            });
+        }
+
+        function renderActivities(activities) {
+            const container = document.getElementById('activity-container');
+            container.innerHTML = '';
+            if (!activities || activities.length === 0) {
+                container.innerHTML = `<p style="color: #888; font-size: 0.9em; text-align: center;">ยังไม่มีกิจกรรมวันนี้</p>`;
+                return;
+            }
+            activities.forEach(act => {
+                const div = document.createElement('div');
+                div.className = 'activity-item';
+                div.innerHTML = `
+                    <div><strong>${act.full_name} (${act.nickname})</strong><br><span style="font-size: 0.8em; color: #64748b;">ห้อง ${act.class_room}</span></div>
+                    <div style="text-align: right;"><span class="badge badge-${act.status}">${act.status}</span><br><span style="font-size: 0.75em; color: #94a3b8;">${act.time} น.</span></div>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function filterTableLocally() {
+            const keyword = document.getElementById('searchInput').value.toLowerCase();
+            const container = document.getElementById('member-container');
+            container.innerHTML = '';
+            let filtered = globalAttendanceData.filter(m => 
+                m.full_name.toLowerCase().includes(keyword) || m.nickname.toLowerCase().includes(keyword) || m.class_room.toLowerCase().includes(keyword)
+            );
+
+            filtered.forEach(m => {
+                const logsEnc = encodeURIComponent(JSON.stringify(m.history_logs || []));
+                const item = document.createElement('div');
+                item.className = 'member-item';
+                item.innerHTML = `
+                    <div>
+                        <strong>${m.full_name} (${m.nickname})</strong><br>
+                        <span style="font-size: 0.85em; color: #64748b;">ห้อง ${m.class_room} | ${m.role}</span><br>
+                        <button class="btn-history" onclick="openHistoryModal('${m.full_name}', '${m.nickname}', '${m.class_room}', '${logsEnc}')">
+                            📊 ดูประวัติย้อนหลังรายวัน
+                        </button>
+                    </div>
+                    <div><span class="badge badge-${m.status}">${m.status}</span></div>
+                `;
+                container.appendChild(item);
+            });
+        }
+
+        function openSidebar(status, titleText) {
+            document.getElementById('drawer-title').innerText = `รายละเอียด: ${titleText}`;
+            const drawerContainer = document.getElementById('drawer-member-container');
+            drawerContainer.innerHTML = '';
+            let list = status === 'all' ? globalAttendanceData : globalAttendanceData.filter(m => m.status === status);
+
+            list.forEach(m => {
+                const item = document.createElement('div');
+                item.className = 'member-item';
+                let subText = `ห้อง ${m.class_room} | ${m.role}`;
+                if (m.status === 'ลา' && m.note) subText += ` (เหตุผล: ${m.note})`;
+                item.innerHTML = `
+                    <div>
+                        <strong>${m.full_name} (${m.nickname})</strong><br>
+                        <span style="font-size: 0.85em; color: #64748b;">${subText}</span>
+                    </div>
+                    <span class="badge badge-${m.status}">${m.status}</span>
+                `;
+                drawerContainer.appendChild(item);
+            });
+
+            document.getElementById('sidebarDrawer').classList.add('open');
+            document.getElementById('backdrop').classList.add('show');
+        }
+
+        function closeSidebar() {
+            document.getElementById('sidebarDrawer').classList.remove('open');
+            document.getElementById('backdrop').classList.remove('show');
+        }
+
+        function openHistoryModal(fullName, nickname, classRoom, logsEnc) {
+            document.getElementById('modalMemberName').innerText = `${fullName} (${nickname})`;
+            document.getElementById('modalMemberInfo').innerText = `ห้องเรียน: ${classRoom}`;
+            
+            const logs = JSON.parse(decodeURIComponent(logsEnc));
+            
+            // นับจำนวน มา, สาย, ลา จาก logs
+            let countPresent = 0;
+            let countLate = 0;
+            let countLeave = 0;
+
+            logs.forEach(log => {
+                if (log.status === 'มา') countPresent++;
+                else if (log.status === 'มาสาย') countLate++;
+                else if (log.status === 'ลา') countLeave++;
+            });
+
+            // แสดงผลยอดรวมในกล่องย่อยด้านบนป็อปอัพ
+            document.getElementById('sumModalPresent').innerText = countPresent;
+            document.getElementById('sumModalLate').innerText = countLate;
+            document.getElementById('sumModalLeave').innerText = countLeave;
+
+            const listContainer = document.getElementById('modalHistoryList');
+            listContainer.innerHTML = '';
+
+            if (logs.length === 0) {
+                listContainer.innerHTML = `<p style="text-align: center; color: #888; padding: 20px;">ยังไม่มีประวัติการเช็กชื่อในระบบ</p>`;
+            } else {
+                logs.forEach(log => {
+                    const row = document.createElement('div');
+                    row.className = 'history-day-item';
+                    row.innerHTML = `
+                        <div>📅 <strong>${log.date}</strong> <span style="font-size: 0.8em; color: #64748b;">(${log.time} น.)</span></div>
+                        <div><span class="badge badge-${log.status}">${log.status}</span></div>
+                    `;
+                    listContainer.appendChild(row);
+                });
+            }
+
+            document.getElementById('historyModal').classList.add('show');
+        }
+
+        function closeHistoryModal() {
+            document.getElementById('historyModal').classList.remove('show');
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            updateDateHeader();
+            fetchDashboardData();
+        });
+    </script>
+</body>
+</html>

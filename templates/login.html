@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <title>สารวัตรCheck - ระบบเช็กชื่อปฏิบัติหน้าที่</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #311042 100%);
+            min-height: 100vh;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: #334155;
+            position: relative;
+            overflow: hidden;
+        }
+        body::before {
+            content: '';
+            position: absolute;
+            width: 500px;
+            height: 500px;
+            background: rgba(234, 179, 8, 0.15);
+            filter: blur(100px);
+            border-radius: 50%;
+            top: -100px;
+            left: -100px;
+            z-index: 0;
+        }
+        .login-card {
+            background: rgba(255, 255, 255, 0.92);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            width: 100%;
+            max-width: 420px;
+            padding: 35px;
+            border-radius: 28px;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.3);
+            box-sizing: border-box;
+            z-index: 1;
+            text-align: center;
+        }
+        .logo-icon {
+            background: linear-gradient(135deg, #facc15 0%, #eab308 100%);
+            color: #1e293b;
+            width: 65px;
+            height: 65px;
+            border-radius: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.8em;
+            font-weight: bold;
+            margin: 0 auto 15px auto;
+            box-shadow: 0 8px 20px rgba(234, 179, 8, 0.4);
+        }
+        h2 { margin: 0 0 5px 0; color: #0f172a; font-size: 1.5em; }
+        p.subtitle { margin: 0 0 25px 0; color: #64748b; font-size: 0.9em; }
+        
+        .input-group { margin-bottom: 16px; text-align: left; }
+        .input-group label { display: block; font-size: 0.85em; font-weight: bold; color: #475569; margin-bottom: 6px; }
+        .form-control { width: 100%; padding: 12px 16px; border: 2px solid #e2e8f0; border-radius: 14px; box-sizing: border-box; font-size: 0.95em; outline: none; background: #f8fafc; transition: all 0.2s; }
+        .form-control:focus { border-color: #3b82f6; background: #fff; box-shadow: 0 0 0 4px rgba(59,130,246,0.12); }
+        
+        .date-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+        .btn-primary { width: 100%; background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); color: white; border: none; padding: 14px; border-radius: 14px; font-size: 1em; font-weight: bold; cursor: pointer; box-shadow: 0 6px 20px rgba(37,99,235,0.3); transition: transform 0.2s, opacity 0.2s; margin-top: 5px; }
+        .btn-primary:hover { opacity: 0.95; transform: translateY(-2px); }
+        
+        .btn-secondary { width: 100%; background: #f1f5f9; color: #334155; border: none; padding: 12px; border-radius: 14px; font-size: 0.95em; font-weight: bold; cursor: pointer; transition: background 0.2s; margin-top: 10px; text-decoration: none; display: inline-block; box-sizing: border-box; }
+        .btn-secondary:hover { background: #e2e8f0; }
+
+        .advance-leave-link { margin-top: 18px; font-size: 0.85em; }
+        .advance-leave-link a { color: #d97706; text-decoration: none; font-weight: bold; transition: color 0.2s; cursor: pointer; }
+        .advance-leave-link a:hover { color: #b45309; text-decoration: underline; }
+
+        #alertBox { margin-top: 15px; padding: 12px; border-radius: 12px; font-size: 0.9em; display: none; }
+        .alert-success { background: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0; }
+        .alert-error { background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
+
+        /* Modal แจ้งลาล่วงหน้า */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15,23,42,0.6); backdrop-filter: blur(4px); display: none; justify-content: center; align-items: center; z-index: 2000; opacity: 0; transition: opacity 0.3s ease; }
+        .modal-overlay.show { display: flex; opacity: 1; }
+        .modal-box { background: white; width: 100%; max-width: 420px; border-radius: 24px; padding: 25px; box-shadow: 0 20px 40px rgba(0,0,0,0.2); transform: scale(0.9); transition: transform 0.3s ease; text-align: left; box-sizing: border-box; }
+        .modal-overlay.show .modal-box { transform: scale(1); }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid #f1f5f9; padding-bottom: 10px; }
+        .modal-header h3 { margin: 0; color: #0f172a; font-size: 1.1em; }
+        .close-btn { background: #f1f5f9; border: none; width: 30px; height: 30px; border-radius: 50%; font-size: 1.1em; cursor: pointer; color: #475569; display: flex; align-items: center; justify-content: center; }
+    </style>
+</head>
+<body>
+
+    <div class="login-card">
+        <div class="logo-icon">✓</div>
+        <h2>สารวัตรCheck</h2>
+        <p class="subtitle">ระบบเช็กชื่อเข้าปฏิบัติหน้าที่</p>
+        
+        <div class="input-group">
+            <label>ชื่อเล่น หรือ ชื่อ-นามสกุล</label>
+            <input type="text" id="keywordInput" class="form-control" placeholder="เช่น กร, เบลเยียม หรือชื่อเต็ม">
+        </div>
+
+        <button class="btn-primary" onclick="handleCheckIn()">📍 เช็กชื่อเข้าโรงเรียน</button>
+        <a href="/dashboard" class="btn-secondary">📊 ไปหน้าแดชบอร์ดสรุปผล</a>
+
+        <div class="advance-leave-link">
+            <a onclick="openLeaveModal()">📝 แจ้งลาล่วงหน้า / ลายาวหลายวัน</a>
+        </div>
+
+        <div id="alertBox"></div>
+    </div>
+
+    <!-- Modal ฟอร์มแจ้งลาล่วงหน้า (รองรับหลายวัน) -->
+    <div id="leaveModal" class="modal-overlay" onclick="closeLeaveModal(event)">
+        <div class="modal-box" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <h3>📝 ระบบแจ้งลาล่วงหน้า</h3>
+                <button class="close-btn" onclick="closeLeaveModal()">&times;</button>
+            </div>
+            <div class="input-group">
+                <label>ชื่อสมาชิก (ชื่อเล่นหรือชื่อเต็ม)</label>
+                <input type="text" id="leaveKeyword" class="form-control" placeholder="เช่น กร">
+            </div>
+            <div class="date-row">
+                <div class="input-group">
+                    <label>ตั้งแต่วันที่</label>
+                    <input type="date" id="leaveStartDate" class="form-control">
+                </div>
+                <div class="input-group">
+                    <label>ถึงวันที่ (ถ้าวันเดียวปล่อยว่าง)</label>
+                    <input type="date" id="leaveEndDate" class="form-control">
+                </div>
+            </div>
+            <div class="input-group">
+                <label>เหตุผลการลา</label>
+                <input type="text" id="leaveNote" class="form-control" placeholder="เช่น ลาป่วย, ไปทำธุระต่างจังหวัด">
+            </div>
+            <button class="btn-primary" style="background: #0284c7;" onclick="submitLeave()">📤 ยืนยันการแจ้งลา</button>
+            <div id="leaveAlert" style="margin-top: 10px; font-size: 0.85em; text-align: center;"></div>
+        </div>
+    </div>
+
+    <script>
+        function showAlert(msg, isSuccess) {
+            const box = document.getElementById('alertBox');
+            box.style.display = 'block';
+            box.className = isSuccess ? 'alert-success' : 'alert-error';
+            box.innerText = msg;
+        }
+
+        async function handleCheckIn() {
+            const keyword = document.getElementById('keywordInput').value.trim();
+            if (!keyword) {
+                showAlert('กรุณากรอกชื่อก่อนเช็กชื่อครับ', false);
+                return;
+            }
+
+            if (!navigator.geolocation) {
+                showAlert('เบราว์เซอร์ของคุณไม่รองรับ GPS', false);
+                return;
+            }
+
+            showAlert('กำลังตรวจสอบพิกัด GPS...', true);
+
+            navigator.geolocation.getCurrentPosition(async (position) => {
+                const lat = position.coords.latitude;
+                const lng = position.coords.longitude;
+
+                try {
+                    const res = await fetch('/api/action/checkin', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ keyword, lat, lng })
+                    });
+                    const data = await res.json();
+                    showAlert(data.message, data.ok);
+                } catch (err) {
+                    showAlert('เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์', false);
+                }
+            }, (error) => {
+                showAlert('❌ ไม่สามารถดึงพิกัด GPS ได้ กรุณาเปิด Location ในเครื่อง', false);
+            }, { enableHighAccuracy: true, timeout: 10000 });
+        }
+
+        function openLeaveModal() {
+            const todayStr = new Date().toISOString().split('T')[0];
+            document.getElementById('leaveStartDate').value = todayStr;
+            document.getElementById('leaveEndDate').value = '';
+            document.getElementById('leaveModal').classList.add('show');
+        }
+
+        function closeLeaveModal() {
+            document.getElementById('leaveModal').classList.remove('show');
+            document.getElementById('leaveAlert').innerText = '';
+        }
+
+        async function submitLeave() {
+            const keyword = document.getElementById('leaveKeyword').value.trim();
+            const startDate = document.getElementById('leaveStartDate').value;
+            const endDate = document.getElementById('leaveEndDate').value;
+            const note = document.getElementById('leaveNote').value.trim();
+            const alertDiv = document.getElementById('leaveAlert');
+
+            if (!keyword || !startDate || !note) {
+                alertDiv.style.color = '#dc2626';
+                alertDiv.innerText = 'กรุณากรอกชื่อ วันที่เริ่มต้น และเหตุผลครับ';
+                return;
+            }
+
+            try {
+                const res = await fetch('/api/action/leave', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ keyword, startDate, endDate, note })
+                });
+                const data = await res.json();
+                alertDiv.style.color = data.ok ? '#16a34a' : '#dc2626';
+                alertDiv.innerText = data.message;
+                if (data.ok) {
+                    setTimeout(() => { closeLeaveModal(); }, 1800);
+                }
+            } catch (err) {
+                alertDiv.style.color = '#dc2626';
+                alertDiv.innerText = 'เกิดข้อผิดพลาดในการบันทึก';
+            }
+        }
+    </script>
+</body>
+</html>
