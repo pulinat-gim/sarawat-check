@@ -18,6 +18,10 @@ def find_member_by_keyword(cursor, keyword):
 
 @app.route('/')
 def index():
+    return render_template('index.html')
+
+@app.route('/dashboard')
+def dashboard():
     if 'logged_in' not in session:
         return redirect(url_for('login'))
     return render_template('index.html')
@@ -28,7 +32,7 @@ def login():
         password = request.form.get('password')
         if password == '1234':  # รหัสผ่านสามารถเปลี่ยนได้ตามต้องการ
             session['logged_in'] = True
-            return redirect(url_for('index'))
+            return redirect(url_for('dashboard'))
         else:
             return render_template('login.html', error='รหัสผ่านไม่ถูกต้อง')
     return render_template('login.html')
