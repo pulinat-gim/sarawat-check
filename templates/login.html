@@ -111,7 +111,7 @@
         <div id="alertBox"></div>
     </div>
 
-    <!-- Modal ฟอร์มแจ้งลาล่วงหน้า (รองรับหลายวัน) -->
+    <!-- Modal ฟอร์มแจ้งลาล่วงหน้า -->
     <div id="leaveModal" class="modal-overlay" onclick="closeLeaveModal(event)">
         <div class="modal-box" onclick="event.stopPropagation()">
             <div class="modal-header">
@@ -156,31 +156,26 @@
                 return;
             }
 
-            if (!navigator.geolocation) {
-                showAlert('เบราว์เซอร์ของคุณไม่รองรับ GPS', false);
-                return;
-            }
+            showAlert('กำลังบันทึกข้อมูล...', true);
 
-            showAlert('กำลังตรวจสอบพิกัด GPS...', true);
-
-            navigator.geolocation.getCurrentPosition(async (position) => {
-                const lat = position.coords.latitude;
-                const lng = position.coords.longitude;
-
-                try {
-                    const res = await fetch('/api/action/checkin', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ keyword, lat, lng })
-                    });
-                    const data = await res.json();
-                    showAlert(data.message, data.ok);
-                } catch (err) {
-                    showAlert('เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์', false);
+            try {
+                const res = await fetch('/api/action/checkin', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ keyword })
+                });
+                const data = await res.json();
+                showAlert(data.message, data.ok);
+                
+                if (data.ok) {
+                    // เช็กชื่อสำเร็จ หน่วงเวลา 1.5 วินาทีแล้วเด้งไปหน้าแดชบอร์ดอัตโนมัติ
+                    setTimeout(() => {
+                        window.location.href = '/dashboard';
+                    }, 1500);
                 }
-            }, (error) => {
-                showAlert('❌ ไม่สามารถดึงพิกัด GPS ได้ กรุณาเปิด Location ในเครื่อง', false);
-            }, { enableHighAccuracy: true, timeout: 10000 });
+            } catch (err) {
+                showAlert('เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์', false);
+            }
         }
 
         function openLeaveModal() {
@@ -218,7 +213,10 @@
                 alertDiv.style.color = data.ok ? '#16a34a' : '#dc2626';
                 alertDiv.innerText = data.message;
                 if (data.ok) {
-                    setTimeout(() => { closeLeaveModal(); }, 1800);
+                    setTimeout(() => { 
+                        closeLeaveModal(); 
+                        window.location.href = '/dashboard';
+                    }, 1500);
                 }
             } catch (err) {
                 alertDiv.style.color = '#dc2626';

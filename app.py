@@ -16,19 +16,19 @@ def find_member_by_keyword(cursor, keyword):
                    (keyword, f"%{keyword}%", f"%{keyword}%"))
     return cursor.fetchone()
 
-# หน้าแรกสุด (/) ให้แสดงหน้า Login / เช็กชื่อ (index.html)
+# หน้าแรกสุดคือหน้าเช็กชื่อ (index.html)
 @app.route('/')
 def index():
     return render_template('index.html')
 
-# หน้าแดชบอร์ดสรุปผล (ต้องล็อกอินรหัสผ่านก่อนถึงจะเข้าไปดูได้)
+# หน้าแดชบอร์ดสรุปผล (ต้องล็อกอินรหัสผ่านก่อน)
 @app.route('/dashboard')
 def dashboard():
     if 'logged_in' not in session:
         return redirect(url_for('login_page'))
     return render_template('dashboard.html')
 
-# หน้ากรอกรหัสผ่านเข้าแดชบอร์ด
+# หน้ากรอกรหัสผ่าน (login.html)
 @app.route('/login', methods=['GET', 'POST'])
 def login_page():
     if request.method == 'POST':
