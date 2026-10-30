@@ -30,7 +30,7 @@ def dashboard():
 def login():
     if request.method == 'POST':
         password = request.form.get('password')
-        if password == '1234':  # รหัสผ่านสามารถเปลี่ยนได้ตามต้องการ
+        if password == '1234':  # รหัสผ่าน
             session['logged_in'] = True
             return redirect(url_for('dashboard'))
         else:
