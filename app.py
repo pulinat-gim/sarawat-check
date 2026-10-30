@@ -2,15 +2,9 @@ from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 from flask import Flask, render_template, request, jsonify
 import sqlite3
-import math
 
 app = Flask(__name__)
 app.secret_key = 'your_secret_key_here'
-
-# พิกัดโรงเรียน (ตั้งค่าตามจริงของคุณ)
-SCHOOL_LAT = 13.7563
-SCHOOL_LNG = 100.5018
-ALLOWED_DISTANCE_KM = 0.5  # รัศมี 500 เมตร
 
 def get_db_connection():
     conn = sqlite3.connect('database.db')
@@ -18,24 +12,26 @@ def get_db_connection():
     return conn
 
 def find_member_by_keyword(cursor, keyword):
-    cursor.execute("SELECT * FROM members WHERE id = ? OR nickname LIKE ? OR full_name LIKE ?", 
-                   (keyword, f"%{keyword}%", f"%{keyword}%"))
+    keyword = keyword.strip()
+    
+    # 1. ค้นหาแบบตรงเป๊ะก่อน (Exact match) กับ id, nickname หรือ full_name เพื่อป้องกันพิมพ์ "กร" แล้วไปโดน "ณฐกร"
+    cursor.execute("SELECT * FROM members WHERE id = ? OR nickname = ? OR full_name = ?", 
+                   (keyword, keyword, keyword))
+    member = cursor.fetchone()
+    if member:
+        return member
+        
+    # 2. ถ้าไม่เจอแบบตรงเป๊ะ ค่อยหาแบบ Substring (LIKE)
+    cursor.execute("SELECT * FROM members WHERE nickname LIKE ? OR full_name LIKE ?", 
+                   (f"%{keyword}%", f"%{keyword}%"))
     return cursor.fetchone()
 
-def calculate_distance(lat1, lon1, lat2, lon2):
-    R = 6371  # รัศมีโลกหน่วยเป็นกิโลเมตร
-    dlat = math.radians(lat2 - lat1)
-    dlon = math.radians(lon2 - lon1)
-    a = math.sin(dlat/2)**2 + math.cos(math.radians(lat1)) * math.cos(math.radians(lat2)) * math.sin(dlon/2)**2
-    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1-a))
-    return R * c
-
-# 1. หน้าแรกสุด (/) คือหน้าเช็กชื่อ (login.html)
+# หน้าแรกสุด (/) คือหน้าเช็กชื่อ (login.html)
 @app.route('/')
 def index():
     return render_template('login.html')
 
-# 2. หน้าแดชบอร์ดสรุปผล (index.html) - เข้าได้เลยไม่ต้องใส่รหัส
+# หน้าแดชบอร์ดสรุปผล (index.html) - เข้าได้ทันทีไม่ต้องใส่รหัส
 @app.route('/dashboard')
 def dashboard():
     return render_template('index.html')
@@ -49,24 +45,14 @@ def api_members():
     conn.close()
     return jsonify(members)
 
-# API เช็กชื่อ พร้อมระบบ GPS กลับมาแล้ว!
+# API เช็กชื่อ (ไม่บล็อก GPS และแก้ปัญหาค้นหาชื่อแม่นยำขึ้น)
 @app.route('/api/action/checkin', methods=['POST'])
 def api_action_checkin():
     data = request.get_json()
     keyword = data.get('keyword', '').strip()
-    user_lat = data.get('lat')
-    user_lng = data.get('lng')
     
     if not keyword:
         return jsonify({'ok': False, 'message': 'กรุณากรอกรหัสหรือชื่อ'})
-        
-    if user_lat is None or user_lng is None:
-        return jsonify({'ok': False, 'message': '❌ ไม่พบข้อมูลพิกัด GPS กรุณาเปิด Location'})
-        
-    # เช็กระยะห่าง GPS
-    distance = calculate_distance(SCHOOL_LAT, SCHOOL_LNG, float(user_lat), float(user_lng))
-    if distance > ALLOWED_DISTANCE_KM:
-        return jsonify({'ok': False, 'message': f'❌ คุณอยู่ห่างจากโรงเรียนเกินกำหนด (ระยะทาง {distance:.2f} กม.)'})
         
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -92,7 +78,7 @@ def api_action_checkin():
     
     return jsonify({'ok': True, 'message': f'✅ บันทึก "มา" สำเร็จ: {member["full_name"]} ({time_str} น.)'})
 
-# API แจ้งลาล่วงหน้า (รองรับหลายวัน)
+# API แจ้งลาล่วงหน้า (รองรับหลายวัน และแก้ปัญหาค้นหาชื่อ)
 @app.route('/api/action/leave', methods=['POST'])
 def api_action_leave():
     data = request.get_json()
