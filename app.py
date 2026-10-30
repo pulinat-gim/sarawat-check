@@ -16,21 +16,24 @@ def find_member_by_keyword(cursor, keyword):
                    (keyword, f"%{keyword}%", f"%{keyword}%"))
     return cursor.fetchone()
 
+# หน้าแรกสุด (/) ให้แสดงหน้า Login / เช็กชื่อ (index.html)
 @app.route('/')
 def index():
     return render_template('index.html')
 
+# หน้าแดชบอร์ดสรุปผล (ต้องล็อกอินรหัสผ่านก่อนถึงจะเข้าไปดูได้)
 @app.route('/dashboard')
 def dashboard():
     if 'logged_in' not in session:
-        return redirect(url_for('login'))
+        return redirect(url_for('login_page'))
     return render_template('dashboard.html')
 
+# หน้ากรอกรหัสผ่านเข้าแดชบอร์ด
 @app.route('/login', methods=['GET', 'POST'])
-def login():
+def login_page():
     if request.method == 'POST':
         password = request.form.get('password')
-        if password == '1234':  # รหัสผ่าน
+        if password == '1234':  # รหัสผ่านเข้าแดชบอร์ด
             session['logged_in'] = True
             return redirect(url_for('dashboard'))
         else:
@@ -40,7 +43,7 @@ def login():
 @app.route('/logout')
 def logout():
     session.clear()
-    return redirect(url_for('login'))
+    return redirect(url_for('index'))
 
 @app.route('/api/members', methods=['GET'])
 def api_members():
@@ -83,45 +86,12 @@ def api_action_checkin():
     
     return jsonify({'ok': True, 'message': f'✅ บันทึก "มา" สำเร็จ: {member["full_name"]} ({time_str} น.)'})
 
-@app.route('/api/action/late', methods=['POST'])
-def api_action_late():
-    data = request.get_json()
-    keyword = data.get('keyword', '').strip()
-    note = data.get('note', '').strip()
-    
-    if not keyword:
-        return jsonify({'ok': False, 'message': 'กรุณากรอกรหัสหรือชื่อ'})
-        
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    
-    member = find_member_by_keyword(cursor, keyword)
-    if not member:
-        conn.close()
-        return jsonify({'ok': False, 'message': f'ไม่พบรายชื่อ "{keyword}" ในระบบ'})
-        
-    member_id = member['id']
-    now_thai = datetime.now(ZoneInfo("Asia/Bangkok"))
-    today_str = now_thai.strftime('%Y-%m-%d')
-    time_str = now_thai.strftime('%H:%M')
-    
-    cursor.execute('''
-        INSERT INTO attendance (member_id, date, status, note, time_recorded)
-        VALUES (?, ?, 'มาสาย', ?, ?)
-        ON CONFLICT(member_id, date) DO UPDATE SET status = 'มาสาย', note = ?, time_recorded = ?
-    ''', (member_id, today_str, note, time_str, note, time_str))
-    
-    conn.commit()
-    conn.close()
-    
-    return jsonify({'ok': True, 'message': f'⚠️ บันทึก "มาสาย" สำเร็จ: {member["full_name"]}'})
-
 @app.route('/api/action/leave', methods=['POST'])
 def api_action_leave():
     data = request.get_json()
     keyword = data.get('keyword', '').strip()
-    start_date_str = data.get('start_date', '').strip()
-    end_date_str = data.get('end_date', '').strip()
+    start_date_str = data.get('startDate', '').strip()
+    end_date_str = data.get('endDate', '').strip()
     note = data.get('note', '').strip()
     
     if not keyword:
