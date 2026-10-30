@@ -24,7 +24,7 @@ def index():
 def dashboard():
     if 'logged_in' not in session:
         return redirect(url_for('login'))
-    return render_template('index.html')
+    return render_template('dashboard.html')
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
