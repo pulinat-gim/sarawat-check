@@ -1,10 +1,16 @@
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
-from flask import Flask, render_template, request, redirect, url_for, session, jsonify
+from flask import Flask, render_template, request, jsonify
 import sqlite3
+import math
 
 app = Flask(__name__)
 app.secret_key = 'your_secret_key_here'
+
+# พิกัดโรงเรียน (ตั้งค่าตามจริงของคุณ)
+SCHOOL_LAT = 13.7563
+SCHOOL_LNG = 100.5018
+ALLOWED_DISTANCE_KM = 0.5  # รัศมี 500 เมตร
 
 def get_db_connection():
     conn = sqlite3.connect('database.db')
@@ -16,34 +22,23 @@ def find_member_by_keyword(cursor, keyword):
                    (keyword, f"%{keyword}%", f"%{keyword}%"))
     return cursor.fetchone()
 
-# 1. หน้าแรกสุด (/) คือหน้าเช็กชื่อ (ใช้ไฟล์ login.html)
+def calculate_distance(lat1, lon1, lat2, lon2):
+    R = 6371  # รัศมีโลกหน่วยเป็นกิโลเมตร
+    dlat = math.radians(lat2 - lat1)
+    dlon = math.radians(lon2 - lon1)
+    a = math.sin(dlat/2)**2 + math.cos(math.radians(lat1)) * math.cos(math.radians(lat2)) * math.sin(dlon/2)**2
+    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1-a))
+    return R * c
+
+# 1. หน้าแรกสุด (/) คือหน้าเช็กชื่อ (login.html)
 @app.route('/')
 def index():
     return render_template('login.html')
 
-# 2. หน้าแดชบอร์ดสรุปผล (ใช้ไฟล์ index.html - ต้องล็อกอินรหัสผ่านก่อน)
+# 2. หน้าแดชบอร์ดสรุปผล (index.html) - เข้าได้เลยไม่ต้องใส่รหัส
 @app.route('/dashboard')
 def dashboard():
-    if 'logged_in' not in session:
-        return redirect(url_for('login_page'))
     return render_template('index.html')
-
-# 3. หน้ากรอกรหัสผ่าน (ใช้ไฟล์ login.html หรือหน้ากรอกรหัสของคุณ)
-@app.route('/login', methods=['GET', 'POST'])
-def login_page():
-    if request.method == 'POST':
-        password = request.form.get('password')
-        if password == '1234':  # รหัสผ่านเข้าแดชบอร์ด
-            session['logged_in'] = True
-            return redirect(url_for('dashboard'))
-        else:
-            return render_template('login.html', error='รหัสผ่านไม่ถูกต้อง')
-    return render_template('login.html')
-
-@app.route('/logout')
-def logout():
-    session.clear()
-    return redirect(url_for('index'))
 
 @app.route('/api/members', methods=['GET'])
 def api_members():
@@ -54,13 +49,24 @@ def api_members():
     conn.close()
     return jsonify(members)
 
+# API เช็กชื่อ พร้อมระบบ GPS กลับมาแล้ว!
 @app.route('/api/action/checkin', methods=['POST'])
 def api_action_checkin():
     data = request.get_json()
     keyword = data.get('keyword', '').strip()
+    user_lat = data.get('lat')
+    user_lng = data.get('lng')
     
     if not keyword:
         return jsonify({'ok': False, 'message': 'กรุณากรอกรหัสหรือชื่อ'})
+        
+    if user_lat is None or user_lng is None:
+        return jsonify({'ok': False, 'message': '❌ ไม่พบข้อมูลพิกัด GPS กรุณาเปิด Location'})
+        
+    # เช็กระยะห่าง GPS
+    distance = calculate_distance(SCHOOL_LAT, SCHOOL_LNG, float(user_lat), float(user_lng))
+    if distance > ALLOWED_DISTANCE_KM:
+        return jsonify({'ok': False, 'message': f'❌ คุณอยู่ห่างจากโรงเรียนเกินกำหนด (ระยะทาง {distance:.2f} กม.)'})
         
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -86,6 +92,7 @@ def api_action_checkin():
     
     return jsonify({'ok': True, 'message': f'✅ บันทึก "มา" สำเร็จ: {member["full_name"]} ({time_str} น.)'})
 
+# API แจ้งลาล่วงหน้า (รองรับหลายวัน)
 @app.route('/api/action/leave', methods=['POST'])
 def api_action_leave():
     data = request.get_json()
