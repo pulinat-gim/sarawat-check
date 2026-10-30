@@ -10,7 +10,7 @@ app.secret_key = 'your_secret_key_here'
 # 📍 พิกัดโรงเรียน (ตั้งค่าพิกัดจริงของคุณตรงนี้)
 SCHOOL_LAT = 13.7563
 SCHOOL_LNG = 100.5018
-ALLOWED_DISTANCE_KM = 1.0  # รัศมียอมให้เช็กชื่อได้ (หน่วยเป็นกิโลเมตร เช่น 1.0 กม.)
+ALLOWED_DISTANCE_KM = 2.0  # รัศมียอมให้เช็กชื่อได้ (เช่น 2 กิโลเมตร หรือปรับตามต้องการ)
 
 def get_db_connection():
     conn = sqlite3.connect('database.db')
@@ -58,7 +58,7 @@ def api_members():
     conn.close()
     return jsonify(members)
 
-# API เช็กชื่อ พร้อมระบบเช็กพิกัด GPS กลับมาแล้ว!
+# API เช็กชื่อ พร้อมระบบเช็กพิกัด GPS อัจฉริยะ
 @app.route('/api/action/checkin', methods=['POST'])
 def api_action_checkin():
     data = request.get_json()
@@ -70,12 +70,14 @@ def api_action_checkin():
         return jsonify({'ok': False, 'message': 'กรุณากรอกรหัสหรือชื่อ'})
         
     if user_lat is None or user_lng is None:
-        return jsonify({'ok': False, 'message': '❌ กรุณาเปิดใช้งาน GPS / Location เพื่อเช็กชื่อ'})
+        return jsonify({'ok': False, 'message': '❌ ไม่สามารถดึงพิกัด GPS ได้ กรุณาลองใหม่อีกครั้ง'})
         
     # คำนวณระยะทางเทียบกับโรงเรียน
     distance = calculate_distance(SCHOOL_LAT, SCHOOL_LNG, float(user_lat), float(user_lng))
+    distance_meters = int(distance * 1000)
+    
     if distance > ALLOWED_DISTANCE_KM:
-        return jsonify({'ok': False, 'message': f'❌ คุณอยู่ห่างจากโรงเรียนเกินกำหนด (ห่างประมาณ {int(distance * 1000)} เมตร)'})
+        return jsonify({'ok': False, 'message': f'❌ เช็กชื่อไม่สำเร็จ: คุณอยู่ห่างจากโรงเรียนประมาณ {distance_meters} เมตร'})
         
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -99,7 +101,7 @@ def api_action_checkin():
     conn.commit()
     conn.close()
     
-    return jsonify({'ok': True, 'message': f'✅ บันทึก "มา" สำเร็จ: {member["full_name"]} ({time_str} น.)'})
+    return jsonify({'ok': True, 'message': f'✅ บันทึก "มา" สำเร็จ (ห่างจากโรงเรียน {distance_meters} ม.): {member["full_name"]} ({time_str} น.)'})
 
 # API แจ้งลาล่วงหน้า (รองรับหลายวัน)
 @app.route('/api/action/leave', methods=['POST'])

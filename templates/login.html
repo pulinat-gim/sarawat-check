@@ -156,22 +156,42 @@
                 return;
             }
 
-            showAlert('กำลังบันทึกข้อมูล...', true);
+            showAlert('กำลังตรวจสอบพิกัด GPS และบันทึกข้อมูล...', true);
 
+            // ดึงพิกัด GPS อัตโนมัติ (เบราว์เซอร์จะเด้งขออนุญาตเอง)
+            if (!navigator.geolocation) {
+                sendCheckInRequest(keyword, null, null);
+                return;
+            }
+
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    const lat = position.coords.latitude;
+                    const lng = position.coords.longitude;
+                    sendCheckInRequest(keyword, lat, lng);
+                },
+                (error) => {
+                    // ถ้าผู้ใช้กดไม่อนุญาต หรือ GPS มีปัญหา ส่งค่าพิกัดเป็น null ไปให้หลังบ้านจัดการ
+                    sendCheckInRequest(keyword, null, null);
+                },
+                { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+            );
+        }
+
+        async function sendCheckInRequest(keyword, lat, lng) {
             try {
                 const res = await fetch('/api/action/checkin', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ keyword })
+                    body: JSON.stringify({ keyword, lat, lng })
                 });
                 const data = await res.json();
                 showAlert(data.message, data.ok);
                 
                 if (data.ok) {
-                    // เช็กชื่อสำเร็จ หน่วงเวลา 1.5 วินาทีแล้วเด้งไปหน้าแดชบอร์ดอัตโนมัติ
                     setTimeout(() => {
                         window.location.href = '/dashboard';
-                    }, 1500);
+                    }, 1800);
                 }
             } catch (err) {
                 showAlert('เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์', false);
