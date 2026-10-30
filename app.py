@@ -16,29 +16,29 @@ def find_member_by_keyword(cursor, keyword):
                    (keyword, f"%{keyword}%", f"%{keyword}%"))
     return cursor.fetchone()
 
-# 1. หน้าแรกสุด (/) คือหน้าเช็กชื่อ (เรียกจากไฟล์ login.html)
+# 1. หน้าแรกสุด (/) คือหน้าเช็กชื่อ (ใช้ไฟล์ login.html)
 @app.route('/')
 def index():
     return render_template('login.html')
 
-# 2. หน้าแดชบอร์ดสรุปผล (เรียกจากไฟล์ index.html - ต้องล็อกอินก่อน)
+# 2. หน้าแดชบอร์ดสรุปผล (ใช้ไฟล์ index.html - ต้องล็อกอินรหัสผ่านก่อน)
 @app.route('/dashboard')
 def dashboard():
     if 'logged_in' not in session:
         return redirect(url_for('login_page'))
     return render_template('index.html')
 
-# 3. หน้ากรอกรหัสผ่านเข้าแดชบอร์ด (ถ้าคุณมีไฟล์แยก หรือถ้าใช้หน้าอื่นแจ้งได้ครับ)
+# 3. หน้ากรอกรหัสผ่าน (ใช้ไฟล์ login.html หรือหน้ากรอกรหัสของคุณ)
 @app.route('/login', methods=['GET', 'POST'])
 def login_page():
     if request.method == 'POST':
         password = request.form.get('password')
-        if password == '1234':  # รหัสผ่าน
+        if password == '1234':  # รหัสผ่านเข้าแดชบอร์ด
             session['logged_in'] = True
             return redirect(url_for('dashboard'))
         else:
-            return render_template('login_auth.html', error='รหัสผ่านไม่ถูกต้อง') # ปรับตามชื่อไฟล์หน้ากรอกรหัสของคุณ
-    return render_template('login_auth.html')
+            return render_template('login.html', error='รหัสผ่านไม่ถูกต้อง')
+    return render_template('login.html')
 
 @app.route('/logout')
 def logout():
