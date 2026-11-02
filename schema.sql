@@ -7,7 +7,7 @@ CREATE TABLE members (
     full_name TEXT NOT NULL,
     nickname TEXT NOT NULL,
     class_room TEXT NOT NULL,
-    role TEXT NOT NULL DEFAULT 'สมาชิก',
+    role TEXT NOT NULL DEFAULT 'สมาชิก',ห
     password_hash TEXT DEFAULT 'default_hash',
     is_active INTEGER NOT NULL DEFAULT 1
 );
