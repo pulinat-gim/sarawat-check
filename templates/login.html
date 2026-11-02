@@ -2,56 +2,44 @@
 <html lang="th">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>สารวัตรCheck - ระบบเช็กชื่อปฏิบัติหน้าที่</title>
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #311042 100%);
-            min-height: 100vh;
-            margin: 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            color: #334155;
+            min-height: 100vh; margin: 0; display: flex;
+            justify-content: center; align-items: center; color: #334155;
+            padding: 16px; box-sizing: border-box;
         }
         .login-card {
-            background: rgba(255, 255, 255, 0.92);
-            backdrop-filter: blur(16px);
-            width: 100%;
-            max-width: 420px;
-            padding: 35px;
-            border-radius: 28px;
-            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.3);
-            box-sizing: border-box;
-            text-align: center;
+            background: rgba(255, 255, 255, 0.92); backdrop-filter: blur(16px);
+            width: 100%; max-width: 420px; padding: 35px; border-radius: 28px;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.3); box-sizing: border-box; text-align: center;
         }
         .logo-icon {
-            background: linear-gradient(135deg, #facc15 0%, #eab308 100%);
-            color: #1e293b;
-            width: 65px;
-            height: 65px;
-            border-radius: 20px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-size: 1.8em;
-            font-weight: bold;
-            margin: 0 auto 15px auto;
+            background: linear-gradient(135deg, #facc15 0%, #eab308 100%); color: #1e293b;
+            width: 65px; height: 65px; border-radius: 20px; display: flex;
+            justify-content: center; align-items: center; font-size: 1.8em;
+            font-weight: bold; margin: 0 auto 15px auto;
         }
         h2 { margin: 0 0 5px 0; color: #0f172a; font-size: 1.5em; }
-        p.subtitle { margin: 0 0 25px 0; color: #64748b; font-size: 0.9em; }
+        p.subtitle { margin: 0 0 4px 0; color: #64748b; font-size: 0.9em; }
+        .version { font-size: 0.7em; color: #94a3b8; margin-bottom: 20px; }
         .input-group { margin-bottom: 16px; text-align: left; }
         .input-group label { display: block; font-size: 0.85em; font-weight: bold; color: #475569; margin-bottom: 6px; }
         .form-control { width: 100%; padding: 12px 16px; border: 2px solid #e2e8f0; border-radius: 14px; box-sizing: border-box; font-size: 0.95em; outline: none; background: #f8fafc; }
         .date-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         .btn-primary { width: 100%; background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); color: white; border: none; padding: 14px; border-radius: 14px; font-size: 1em; font-weight: bold; cursor: pointer; margin-top: 5px; }
+        .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
         .btn-secondary { width: 100%; background: #f1f5f9; color: #334155; border: none; padding: 12px; border-radius: 14px; font-size: 0.95em; font-weight: bold; cursor: pointer; margin-top: 10px; text-decoration: none; display: inline-block; box-sizing: border-box; }
         .advance-leave-link { margin-top: 18px; font-size: 0.85em; }
         .advance-leave-link a { color: #d97706; text-decoration: none; font-weight: bold; cursor: pointer; }
-        #alertBox { margin-top: 15px; padding: 12px; border-radius: 12px; font-size: 0.9em; display: none; }
+        #alertBox { margin-top: 15px; padding: 12px; border-radius: 12px; font-size: 0.9em; display: none; white-space: pre-line; }
         .alert-success { background: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0; }
         .alert-error { background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
-        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15,23,42,0.6); display: none; justify-content: center; align-items: center; z-index: 2000; }
+        .alert-info { background: #eff6ff; color: #2563eb; border: 1px solid #bfdbfe; }
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15,23,42,0.6); display: none; justify-content: center; align-items: center; z-index: 2000; padding: 16px; box-sizing: border-box; }
         .modal-overlay.show { display: flex; }
         .modal-box { background: white; width: 100%; max-width: 420px; border-radius: 24px; padding: 25px; text-align: left; box-sizing: border-box; }
         .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid #f1f5f9; padding-bottom: 10px; }
@@ -63,13 +51,14 @@
         <div class="logo-icon">✓</div>
         <h2>สารวัตรCheck</h2>
         <p class="subtitle">ระบบเช็กชื่อ ณ วัดบึงพระ</p>
-        
+        <div class="version">GPS v2</div>
+
         <div class="input-group">
             <label>ชื่อเล่น หรือ ชื่อ-นามสกุล</label>
             <input type="text" id="keywordInput" class="form-control" placeholder="เช่น กร หรือชื่อเต็ม">
         </div>
 
-        <button class="btn-primary" onclick="handleCheckIn()">📍 เช็กชื่อเข้าปฏิบัติหน้าที่</button>
+        <button id="checkinBtn" class="btn-primary" onclick="handleCheckIn()">📍 เช็กชื่อเข้าปฏิบัติหน้าที่</button>
         <a href="/dashboard" class="btn-secondary">📊 ไปหน้าแดชบอร์ดสรุปผล</a>
 
         <div class="advance-leave-link">
@@ -109,60 +98,76 @@
     </div>
 
     <script>
-        function showAlert(msg, isSuccess) {
+        function showAlert(msg, type) {
             const box = document.getElementById('alertBox');
             box.style.display = 'block';
-            box.className = isSuccess ? 'alert-success' : 'alert-error';
+            box.className = type === true ? 'alert-success' : type === 'info' ? 'alert-info' : 'alert-error';
             box.innerText = msg;
         }
 
-        async function handleCheckIn() {
+        function setLoading(isLoading) {
+            document.getElementById('checkinBtn').disabled = isLoading;
+        }
+
+        function handleCheckIn() {
             const keyword = document.getElementById('keywordInput').value.trim();
             if (!keyword) {
                 showAlert('กรุณากรอกชื่อก่อนเช็กชื่อครับ', false);
                 return;
             }
-
-            showAlert('กำลังดึงพิกัด GPS วัดบึงพระ...', true);
-
             if (!navigator.geolocation) {
-                sendCheckInRequest(keyword, 16.7625, 100.2611);
+                showAlert('❌ เบราว์เซอร์นี้ไม่รองรับ GPS', false);
                 return;
             }
 
+            setLoading(true);
+            showAlert('📡 กำลังหาตำแหน่ง GPS... (อาจใช้เวลา 5-15 วินาที)', 'info');
+
             navigator.geolocation.getCurrentPosition(
-                (position) => {
-                    const lat = position.coords.latitude;
-                    const lng = position.coords.longitude;
-                    sendCheckInRequest(keyword, lat, lng);
+                (pos) => {
+                    sendCheckInRequest(keyword, pos.coords.latitude, pos.coords.longitude, pos.coords.accuracy);
                 },
-                (error) => {
-                    console.warn('GPS Error, using fallback:', error);
-                    sendCheckInRequest(keyword, 16.7625, 100.2611);
+                (err) => {
+                    setLoading(false);
+                    const messages = {
+                        1: '❌ คุณไม่ได้อนุญาตให้เข้าถึงตำแหน่ง\nกดรูปแม่กุญแจข้างช่อง URL แล้วเปิด "ตำแหน่ง" จากนั้นรีเฟรช',
+                        2: '❌ หาตำแหน่งไม่ได้ กรุณาเปิด GPS ในมือถือ',
+                        3: '❌ หาตำแหน่งนานเกินไป ลองออกไปที่โล่งแล้วกดใหม่'
+                    };
+                    showAlert(messages[err.code] || '❌ เกิดข้อผิดพลาดในการหาตำแหน่ง', false);
                 },
-                { enableHighAccuracy: false, timeout: 8000, maximumAge: 60000 }
+                { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
             );
         }
 
-        async function sendCheckInRequest(keyword, lat, lng) {
+        async function sendCheckInRequest(keyword, lat, lng, accuracy) {
             try {
                 const res = await fetch('/api/action/checkin', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ keyword, lat, lng })
+                    body: JSON.stringify({ keyword, lat, lng, accuracy })
                 });
                 const data = await res.json();
                 showAlert(data.message, data.ok);
                 if (data.ok) {
                     setTimeout(() => { window.location.href = '/dashboard'; }, 1500);
+                } else {
+                    setLoading(false);
                 }
             } catch (err) {
+                setLoading(false);
                 showAlert('เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์', false);
             }
         }
 
+        function todayLocal() {
+            const d = new Date();
+            d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+            return d.toISOString().split('T')[0];
+        }
+
         function openLeaveModal() {
-            document.getElementById('leaveStartDate').value = new Date().toISOString().split('T')[0];
+            document.getElementById('leaveStartDate').value = todayLocal();
             document.getElementById('leaveEndDate').value = '';
             document.getElementById('leaveModal').classList.add('show');
         }
