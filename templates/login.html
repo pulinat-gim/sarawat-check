@@ -168,7 +168,6 @@
                 showAlert(data.message, data.ok);
                 
                 if (data.ok) {
-                    // เช็กชื่อสำเร็จ หน่วงเวลา 1.5 วินาทีแล้วเด้งไปหน้าแดชบอร์ดอัตโนมัติ
                     setTimeout(() => {
                         window.location.href = '/dashboard';
                     }, 1500);
@@ -191,7 +190,7 @@
         }
 
         async function submitLeave() {
-            const keyword = document.getElementById('leaveKeyword').value.trim();
+            const keyword = document.getElementById('leaveKeyword'].value.trim();
             const startDate = document.getElementById('leaveStartDate').value;
             const endDate = document.getElementById('leaveEndDate').value;
             const note = document.getElementById('leaveNote').value.trim();
