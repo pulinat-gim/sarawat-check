@@ -7,12 +7,12 @@ import math
 app = Flask(__name__)
 app.secret_key = 'your_secret_key_here'
 
-# ================== พิกัดจริงวัดบึงพระ จ.พิษณุโลก ==================
-TARGET_NAME = "วัดบึงพระ"
-TARGET_LAT = 16.741540
-TARGET_LNG = 100.264550
-ALLOWED_RADIUS_M = 500      # รัศมีที่อนุญาต (เมตร)
-MAX_GPS_ACCURACY_M = 1000   # ถ้า GPS คลาดเคลื่อนเกินนี้ จะไม่ยอมให้เช็กชื่อ
+# ================== พิกัดจริงโรงเรียนพุทธชินราชพิทยา ==================
+TARGET_NAME = "โรงเรียนพุทธชินราชพิทยา"
+TARGET_LAT = 16.823345
+TARGET_LNG = 100.266813
+ALLOWED_RADIUS_M = 500      # รัศมีที่อนุญาต (500 เมตร)
+MAX_GPS_ACCURACY_M = 1000   # ความแม่นยำ GPS สูงสุดที่ยอมรับ
 # ===================================================================
 
 
@@ -93,17 +93,12 @@ def api_action_checkin():
         accuracy = 0
 
     if accuracy > MAX_GPS_ACCURACY_M:
-        return jsonify({'ok': False, 'message':
-            f'❌ สัญญาณ GPS ไม่แม่น (คลาดเคลื่อน ±{int(accuracy)} ม.) '
-            f'กรุณาใช้มือถือที่เปิด GPS แล้วลองใหม่'})
+        return jsonify({'ok': False, 'message': f'❌ สัญญาณ GPS ไม่แม่นยำ กรุณาลองใหม่อีกครั้ง'})
 
     distance_m = int(calculate_distance_m(TARGET_LAT, TARGET_LNG, user_lat, user_lng))
 
     if distance_m > ALLOWED_RADIUS_M:
-        return jsonify({'ok': False, 'message':
-            f'❌ เช็กชื่อไม่สำเร็จ: คุณอยู่ห่างจาก{TARGET_NAME} {distance_m:,} เมตร '
-            f'(อนุญาตไม่เกิน {ALLOWED_RADIUS_M} ม.)\n'
-            f'พิกัดของคุณ: {user_lat:.6f}, {user_lng:.6f}'})
+        return jsonify({'ok': False, 'message': f'❌ เช็กชื่อไม่สำเร็จ: คุณอยู่ห่างจากพื้นที่เป้าหมาย ({distance_m:,} เมตร)'})
 
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -126,9 +121,8 @@ def api_action_checkin():
     conn.commit()
     conn.close()
 
-    return jsonify({'ok': True, 'message':
-        f'✅ บันทึก "มา" สำเร็จ: {member["full_name"]} '
-        f'(ห่าง{TARGET_NAME} {distance_m} ม., {time_str} น.)'})
+    # แสดงผลตามที่คุณต้องการ: แจ้งแค่ว่าบันทึกสำเร็จและมาแล้ว
+    return jsonify({'ok': True, 'message': f'✅ บันทึก "มา" สำเร็จ: {member["full_name"]} ({time_str} น.)'})
 
 
 @app.route('/api/action/leave', methods=['POST'])
