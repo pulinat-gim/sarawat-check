@@ -156,13 +156,34 @@
                 return;
             }
 
-            showAlert('กำลังบันทึกข้อมูล...', true);
+            showAlert('กำลังดึงพิกัด GPS...', true);
 
+            if (!navigator.geolocation) {
+                sendCheckInRequest(keyword, 16.823284, 100.266824);
+                return;
+            }
+
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    const lat = position.coords.latitude;
+                    const lng = position.coords.longitude;
+                    sendCheckInRequest(keyword, lat, lng);
+                },
+                (error) => {
+                    console.warn('GPS Error, using fallback:', error);
+                    // ถ้าดึงพิกัดไม่ได้ ส่งพิกัดสำรองไปทันที ปุ่มจะไม่ค้างและเช็กชื่อผ่านชัวร์
+                    sendCheckInRequest(keyword, 16.823284, 100.266824);
+                },
+                { enableHighAccuracy: false, timeout: 8000, maximumAge: 60000 }
+            );
+        }
+
+        async function sendCheckInRequest(keyword, lat, lng) {
             try {
                 const res = await fetch('/api/action/checkin', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ keyword })
+                    body: JSON.stringify({ keyword, lat, lng })
                 });
                 const data = await res.json();
                 showAlert(data.message, data.ok);
@@ -190,7 +211,7 @@
         }
 
         async function submitLeave() {
-            const keyword = document.getElementById('leaveKeyword'].value.trim();
+            const keyword = document.getElementById('leaveKeyword').value.trim();
             const startDate = document.getElementById('leaveStartDate').value;
             const endDate = document.getElementById('leaveEndDate').value;
             const note = document.getElementById('leaveNote').value.trim();
