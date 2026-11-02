@@ -156,43 +156,22 @@
                 return;
             }
 
-            showAlert('กำลังตรวจสอบพิกัด...', true);
+            showAlert('กำลังบันทึกข้อมูล...', true);
 
-            if (!navigator.geolocation) {
-                // ถ้าเบราว์เซอร์ไม่รองรับเลย ส่งพิกัดสำรองไปทันที
-                sendCheckInRequest(keyword, 16.823284, 100.266824);
-                return;
-            }
-
-            navigator.geolocation.getCurrentPosition(
-                (position) => {
-                    const lat = position.coords.latitude;
-                    const lng = position.coords.longitude;
-                    sendCheckInRequest(keyword, lat, lng);
-                },
-                (error) => {
-                    console.warn('GPS Error (Fallback to default):', error);
-                    // ถ้าระบบ GPS ดึงพิกัดไม่ได้ (เช่น บนคอม หรือเน็ตบล็อก) ให้ส่งพิกัดโรงเรียนไปเลย จะได้ผ่านชัวร์ 100%
-                    sendCheckInRequest(keyword, 16.823284, 100.266824);
-                },
-                { enableHighAccuracy: false, timeout: 8000, maximumAge: 60000 }
-            );
-        }
-
-        async function sendCheckInRequest(keyword, lat, lng) {
             try {
                 const res = await fetch('/api/action/checkin', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ keyword, lat, lng })
+                    body: JSON.stringify({ keyword })
                 });
                 const data = await res.json();
                 showAlert(data.message, data.ok);
                 
                 if (data.ok) {
+                    // เช็กชื่อสำเร็จ หน่วงเวลา 1.5 วินาทีแล้วเด้งไปหน้าแดชบอร์ดอัตโนมัติ
                     setTimeout(() => {
                         window.location.href = '/dashboard';
-                    }, 1800);
+                    }, 1500);
                 }
             } catch (err) {
                 showAlert('เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์', false);
@@ -214,7 +193,7 @@
         async function submitLeave() {
             const keyword = document.getElementById('leaveKeyword').value.trim();
             const startDate = document.getElementById('leaveStartDate').value;
-            const endDate = document.getElementById('leaveEndDate'].value;
+            const endDate = document.getElementById('leaveEndDate').value;
             const note = document.getElementById('leaveNote').value.trim();
             const alertDiv = document.getElementById('leaveAlert');
 
