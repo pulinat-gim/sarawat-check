@@ -93,7 +93,7 @@ def api_action_checkin():
         accuracy = 0
 
     if accuracy > MAX_GPS_ACCURACY_M:
-        return jsonify({'ok': False, 'message': f'❌ สัญญาณ GPS ไม่แม่นยำ กรุณาลองใหม่อีกครั้ง'})
+        return jsonify({'ok': False, 'message': '❌ สัญญาณ GPS ไม่แม่นยำ กรุณาลองใหม่อีกครั้ง'})
 
     distance_m = int(calculate_distance_m(TARGET_LAT, TARGET_LNG, user_lat, user_lng))
 
@@ -121,7 +121,6 @@ def api_action_checkin():
     conn.commit()
     conn.close()
 
-    # แสดงผลตามที่คุณต้องการ: แจ้งแค่ว่าบันทึกสำเร็จและมาแล้ว
     return jsonify({'ok': True, 'message': f'✅ บันทึก "มา" สำเร็จ: {member["full_name"]} ({time_str} น.)'})
 
 
@@ -236,6 +235,23 @@ def api_attendance_today():
     attendance_list.sort(key=lambda x: x['sort_priority'], reverse=True)
 
     return jsonify({'ok': True, 'stats': stats, 'attendance': attendance_list, 'activities': activity_list[:5]})
+
+
+# เพิ่ม Route รองรับปุ่มรีเซ็ตสถานะหรืออัปเดตรายบุคคลจากหน้า Dashboard
+@app.route('/api/action/reset', methods=['POST'])
+def api_action_reset():
+    data = request.get_json() or {}
+    member_id = data.get('member_id')
+    if not member_id:
+        return jsonify({'ok': False, 'message': 'ไม่พบรหัสสมาชิก'})
+    
+    today_date = datetime.now(ZoneInfo("Asia/Bangkok")).strftime('%Y-%m-%d')
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM attendance WHERE member_id = ? AND date = ?", (member_id, today_date))
+    conn.commit()
+    conn.close()
+    return jsonify({'ok': True, 'message': 'รีเซ็ตสถานะเรียบร้อยแล้ว'})
 
 
 if __name__ == '__main__':
