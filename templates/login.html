@@ -62,14 +62,14 @@
     <div class="login-card">
         <div class="logo-icon">✓</div>
         <h2>สารวัตรCheck</h2>
-        <p class="subtitle">ระบบเช็กชื่อเข้าปฏิบัติหน้าที่</p>
+        <p class="subtitle">ระบบเช็กชื่อ ณ วัดบึงพระ</p>
         
         <div class="input-group">
             <label>ชื่อเล่น หรือ ชื่อ-นามสกุล</label>
             <input type="text" id="keywordInput" class="form-control" placeholder="เช่น กร หรือชื่อเต็ม">
         </div>
 
-        <button class="btn-primary" onclick="handleCheckIn()">📍 เช็กชื่อเข้าโรงเรียน</button>
+        <button class="btn-primary" onclick="handleCheckIn()">📍 เช็กชื่อเข้าปฏิบัติหน้าที่</button>
         <a href="/dashboard" class="btn-secondary">📊 ไปหน้าแดชบอร์ดสรุปผล</a>
 
         <div class="advance-leave-link">
@@ -122,12 +122,34 @@
                 showAlert('กรุณากรอกชื่อก่อนเช็กชื่อครับ', false);
                 return;
             }
-            showAlert('กำลังบันทึกข้อมูล...', true);
+
+            showAlert('กำลังดึงพิกัด GPS วัดบึงพระ...', true);
+
+            if (!navigator.geolocation) {
+                sendCheckInRequest(keyword, 16.7625, 100.2611);
+                return;
+            }
+
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    const lat = position.coords.latitude;
+                    const lng = position.coords.longitude;
+                    sendCheckInRequest(keyword, lat, lng);
+                },
+                (error) => {
+                    console.warn('GPS Error, using fallback:', error);
+                    sendCheckInRequest(keyword, 16.7625, 100.2611);
+                },
+                { enableHighAccuracy: false, timeout: 8000, maximumAge: 60000 }
+            );
+        }
+
+        async function sendCheckInRequest(keyword, lat, lng) {
             try {
                 const res = await fetch('/api/action/checkin', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ keyword })
+                    body: JSON.stringify({ keyword, lat, lng })
                 });
                 const data = await res.json();
                 showAlert(data.message, data.ok);
