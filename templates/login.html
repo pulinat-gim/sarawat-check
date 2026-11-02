@@ -156,11 +156,10 @@
                 return;
             }
 
-            showAlert('กำลังตรวจสอบพิกัด GPS และบันทึกข้อมูล...', true);
+            showAlert('กำลังเชื่อมต่อระบบ GPS ของมือถือ...', true);
 
-            // ดึงพิกัด GPS อัตโนมัติ (เบราว์เซอร์จะเด้งขออนุญาตเอง)
             if (!navigator.geolocation) {
-                sendCheckInRequest(keyword, null, null);
+                showAlert('❌ เบราว์เซอร์ของคุณไม่รองรับการระบุตำแหน่ง GPS', false);
                 return;
             }
 
@@ -171,10 +170,10 @@
                     sendCheckInRequest(keyword, lat, lng);
                 },
                 (error) => {
-                    // ถ้าผู้ใช้กดไม่อนุญาต หรือ GPS มีปัญหา ส่งค่าพิกัดเป็น null ไปให้หลังบ้านจัดการ
-                    sendCheckInRequest(keyword, null, null);
+                    console.warn('GPS Error:', error);
+                    showAlert('❌ ไม่สามารถดึงพิกัด GPS จริงได้ กรุณาเปิด Location (GPS) และอนุญาตสิทธิ์ในเบราว์เซอร์', false);
                 },
-                { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+                { enableHighAccuracy: false, timeout: 15000, maximumAge: 60000 }
             );
         }
 
