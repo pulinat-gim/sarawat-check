@@ -7,12 +7,14 @@ import math
 app = Flask(__name__)
 app.secret_key = 'your_secret_key_here'
 
-# ================== พิกัดจริงโรงเรียนพุทธชินราชพิทยา ==================
+# ================== ตั้งค่าระบบ (แก้ตรงนี้ที่เดียว) ==================
 TARGET_NAME = "โรงเรียนพุทธชินราชพิทยา"
 TARGET_LAT = 16.823345
 TARGET_LNG = 100.266813
-ALLOWED_RADIUS_M = 500      # รัศมีที่อนุญาต (500 เมตร)
-MAX_GPS_ACCURACY_M = 1000   # ความแม่นยำ GPS สูงสุดที่ยอมรับ
+ALLOWED_RADIUS_M = 500      # รัศมีที่อนุญาต (เมตร)
+MAX_GPS_ACCURACY_M = 1000   # ถ้า GPS คลาดเคลื่อนเกินนี้ จะไม่ให้เช็กชื่อ
+LATE_TIME = "07:40"         # เช็กชื่อหลังเวลานี้ = มาสาย (07:40 พอดียังนับว่ามาทัน)
+TIMEZONE = ZoneInfo("Asia/Bangkok")
 # ===================================================================
 
 
@@ -22,7 +24,12 @@ def get_db_connection():
     return conn
 
 
+def now_thai():
+    return datetime.now(TIMEZONE)
+
+
 def calculate_distance_m(lat1, lon1, lat2, lon2):
+    """คำนวณระยะทางระหว่าง 2 พิกัด (หน่วย: เมตร)"""
     R = 6371000
     dlat = math.radians(lat2 - lat1)
     dlon = math.radians(lon2 - lon1)
@@ -33,15 +40,19 @@ def calculate_distance_m(lat1, lon1, lat2, lon2):
 
 
 def find_member(cursor, keyword):
+    # 1. หาแบบตรงเป๊ะก่อน (กันพิมพ์ "กร" แล้วไปโดน "ณฐกร")
     cursor.execute("SELECT * FROM members WHERE id = ? OR nickname = ? OR full_name = ?",
                    (keyword, keyword, keyword))
     member = cursor.fetchone()
+    # 2. ถ้าไม่เจอ ค่อยหาแบบใกล้เคียง
     if not member:
         cursor.execute("SELECT * FROM members WHERE nickname LIKE ? OR full_name LIKE ?",
                        (f"%{keyword}%", f"%{keyword}%"))
         member = cursor.fetchone()
     return member
 
+
+# ========================== หน้าเว็บ ==========================
 
 @app.route('/')
 def index():
@@ -53,13 +64,16 @@ def dashboard():
     return render_template('index.html')
 
 
+# ========================== API ==========================
+
 @app.route('/api/config', methods=['GET'])
 def api_config():
     return jsonify({
         'target_name': TARGET_NAME,
         'target_lat': TARGET_LAT,
         'target_lng': TARGET_LNG,
-        'radius_m': ALLOWED_RADIUS_M
+        'radius_m': ALLOWED_RADIUS_M,
+        'late_time': LATE_TIME
     })
 
 
@@ -81,6 +95,7 @@ def api_action_checkin():
     if not keyword:
         return jsonify({'ok': False, 'message': 'กรุณากรอกชื่อก่อนเช็กชื่อ'})
 
+    # ต้องมีพิกัดจริงเท่านั้น
     try:
         user_lat = float(data.get('lat'))
         user_lng = float(data.get('lng'))
@@ -96,32 +111,50 @@ def api_action_checkin():
         return jsonify({'ok': False, 'message': '❌ สัญญาณ GPS ไม่แม่นยำ กรุณาลองใหม่อีกครั้ง'})
 
     distance_m = int(calculate_distance_m(TARGET_LAT, TARGET_LNG, user_lat, user_lng))
-
     if distance_m > ALLOWED_RADIUS_M:
-        return jsonify({'ok': False, 'message': f'❌ เช็กชื่อไม่สำเร็จ: คุณอยู่ห่างจากพื้นที่เป้าหมาย ({distance_m:,} เมตร)'})
+        return jsonify({'ok': False, 'message':
+            f'❌ เช็กชื่อไม่สำเร็จ: คุณอยู่ห่างจากพื้นที่เป้าหมาย ({distance_m:,} เมตร)'})
 
     conn = get_db_connection()
     cursor = conn.cursor()
     member = find_member(cursor, keyword)
-
     if not member:
         conn.close()
         return jsonify({'ok': False, 'message': f'ไม่พบรายชื่อ "{keyword}" ในระบบ'})
 
-    now_thai = datetime.now(ZoneInfo("Asia/Bangkok"))
-    today_str = now_thai.strftime('%Y-%m-%d')
-    time_str = now_thai.strftime('%H:%M')
+    now = now_thai()
+    today_str = now.strftime('%Y-%m-%d')
+    time_str = now.strftime('%H:%M')
 
+    # หลัง 07:40 = มาสาย
+    status = 'มาสาย' if time_str > LATE_TIME else 'มา'
+
+    # ถ้าเช็กชื่อไปแล้ววันนี้ ไม่ให้กดซ้ำทับเวลาเดิม
+    cursor.execute("SELECT status, time_recorded FROM attendance WHERE member_id = ? AND date = ?",
+                   (member['id'], today_str))
+    existing = cursor.fetchone()
+    if existing and existing['status'] in ('มา', 'มาสาย'):
+        conn.close()
+        return jsonify({'ok': False, 'message':
+            f'ℹ️ {member["full_name"]} เช็กชื่อไปแล้ววันนี้ '
+            f'({existing["status"]} เวลา {existing["time_recorded"]} น.)'})
+
+    # ถ้าเคยแจ้งลาไว้แต่มาจริง จะเปลี่ยนเป็นมา/มาสาย และล้างเหตุผลการลา
     cursor.execute('''
         INSERT INTO attendance (member_id, date, status, time_recorded)
-        VALUES (?, ?, 'มา', ?)
-        ON CONFLICT(member_id, date) DO UPDATE SET status = 'มา', time_recorded = ?
-    ''', (member['id'], today_str, time_str, time_str))
+        VALUES (?, ?, ?, ?)
+        ON CONFLICT(member_id, date) DO UPDATE SET
+            status = excluded.status,
+            time_recorded = excluded.time_recorded,
+            note = NULL
+    ''', (member['id'], today_str, status, time_str))
 
     conn.commit()
     conn.close()
 
-    return jsonify({'ok': True, 'message': f'✅ บันทึก "มา" สำเร็จ: {member["full_name"]} ({time_str} น.)'})
+    icon = '✅' if status == 'มา' else '⏰'
+    return jsonify({'ok': True, 'message':
+        f'{icon} บันทึก "{status}" สำเร็จ: {member["full_name"]} ({time_str} น.)'})
 
 
 @app.route('/api/action/leave', methods=['POST'])
@@ -135,26 +168,26 @@ def api_action_leave():
     if not keyword or not start_date_str or not note:
         return jsonify({'ok': False, 'message': 'กรุณากรอกข้อมูลการลาให้ครบถ้วน'})
 
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    member = find_member(cursor, keyword)
-
-    if not member:
-        conn.close()
-        return jsonify({'ok': False, 'message': f'ไม่พบรายชื่อ "{keyword}" ในระบบ'})
-
-    current_time_str = datetime.now(ZoneInfo("Asia/Bangkok")).strftime('%H:%M')
-
     try:
         start_date = datetime.strptime(start_date_str, '%Y-%m-%d')
         end_date = datetime.strptime(end_date_str, '%Y-%m-%d')
     except ValueError:
-        conn.close()
         return jsonify({'ok': False, 'message': '❌ รูปแบบวันที่ไม่ถูกต้อง'})
 
     if start_date > end_date:
-        conn.close()
         return jsonify({'ok': False, 'message': '❌ วันที่เริ่มต้นต้องไม่มากกว่าวันสิ้นสุด'})
+
+    if (end_date - start_date).days > 60:
+        return jsonify({'ok': False, 'message': '❌ แจ้งลาได้ครั้งละไม่เกิน 60 วัน'})
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    member = find_member(cursor, keyword)
+    if not member:
+        conn.close()
+        return jsonify({'ok': False, 'message': f'ไม่พบรายชื่อ "{keyword}" ในระบบ'})
+
+    current_time_str = now_thai().strftime('%H:%M')
 
     current_date = start_date
     count = 0
@@ -163,8 +196,11 @@ def api_action_leave():
         cursor.execute('''
             INSERT INTO attendance (member_id, date, status, note, time_recorded)
             VALUES (?, ?, 'ลา', ?, ?)
-            ON CONFLICT(member_id, date) DO UPDATE SET status = 'ลา', note = ?, time_recorded = ?
-        ''', (member['id'], d_str, note, current_time_str, note, current_time_str))
+            ON CONFLICT(member_id, date) DO UPDATE SET
+                status = 'ลา',
+                note = excluded.note,
+                time_recorded = excluded.time_recorded
+        ''', (member['id'], d_str, note, current_time_str))
         count += 1
         current_date += timedelta(days=1)
 
@@ -175,20 +211,24 @@ def api_action_leave():
 
 @app.route('/api/attendance/today', methods=['GET'])
 def api_attendance_today():
-    today_date = datetime.now(ZoneInfo("Asia/Bangkok")).strftime('%Y-%m-%d')
+    today_date = now_thai().strftime('%Y-%m-%d')
 
     conn = get_db_connection()
     cursor = conn.cursor()
 
     cursor.execute("SELECT * FROM members ORDER BY id ASC")
     members = [dict(row) for row in cursor.fetchall()]
+    members_by_id = {m['id']: m for m in members}
 
-    cursor.execute("SELECT member_id, date, status, time_recorded FROM attendance ORDER BY date DESC, id DESC")
+    # ประวัติย้อนหลังของแต่ละคน (สูงสุด 30 รายการ)
+    cursor.execute("SELECT member_id, date, status, time_recorded FROM attendance "
+                   "ORDER BY date DESC, id DESC")
     history_by_member = {}
     for row in cursor.fetchall():
         logs = history_by_member.setdefault(row['member_id'], [])
         if len(logs) < 30:
-            logs.append({'date': row['date'], 'status': row['status'], 'time': row['time_recorded'] or '-'})
+            logs.append({'date': row['date'], 'status': row['status'],
+                         'time': row['time_recorded'] or '-'})
 
     cursor.execute("SELECT * FROM attendance WHERE date = ? ORDER BY id DESC", (today_date,))
     attendance_rows = cursor.fetchall()
@@ -201,7 +241,7 @@ def api_attendance_today():
         time_str = row['time_recorded'] or '-'
         if mid not in attendance_records:
             attendance_records[mid] = {'status': row['status'], 'note': row['note'] or ''}
-        info = next((m for m in members if m['id'] == mid), None)
+        info = members_by_id.get(mid)
         if info:
             activity_list.append({
                 'full_name': info['full_name'],
@@ -234,21 +274,23 @@ def api_attendance_today():
 
     attendance_list.sort(key=lambda x: x['sort_priority'], reverse=True)
 
-    return jsonify({'ok': True, 'stats': stats, 'attendance': attendance_list, 'activities': activity_list[:5]})
+    return jsonify({'ok': True, 'stats': stats, 'attendance': attendance_list,
+                    'activities': activity_list[:5]})
 
 
-# เพิ่ม Route รองรับปุ่มรีเซ็ตสถานะหรืออัปเดตรายบุคคลจากหน้า Dashboard
 @app.route('/api/action/reset', methods=['POST'])
 def api_action_reset():
+    """ลบสถานะของวันนี้ของสมาชิก 1 คน (ใช้จากปุ่มรีเซ็ตบนแดชบอร์ด)"""
     data = request.get_json() or {}
     member_id = data.get('member_id')
     if not member_id:
         return jsonify({'ok': False, 'message': 'ไม่พบรหัสสมาชิก'})
-    
-    today_date = datetime.now(ZoneInfo("Asia/Bangkok")).strftime('%Y-%m-%d')
+
+    today_date = now_thai().strftime('%Y-%m-%d')
     conn = get_db_connection()
     cursor = conn.cursor()
-    cursor.execute("DELETE FROM attendance WHERE member_id = ? AND date = ?", (member_id, today_date))
+    cursor.execute("DELETE FROM attendance WHERE member_id = ? AND date = ?",
+                   (member_id, today_date))
     conn.commit()
     conn.close()
     return jsonify({'ok': True, 'message': 'รีเซ็ตสถานะเรียบร้อยแล้ว'})
